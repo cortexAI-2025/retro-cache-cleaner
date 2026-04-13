@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        QUERY_ALL_PACKAGES : obligatoire sur Android 11+ (API 30+) pour lister
+        toutes les applications installées via getInstalledApplications().
+        Note : Google Play exige une justification lors de la soumission.
+        Pour un usage interne (société), aucun problème.
+    -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!--
+        PACKAGE_USAGE_STATS (optionnel) : permet de lire les vraies tailles de cache
+        via UsageStatsManager. Nécessite une approbation manuelle de l'utilisateur dans
+        Paramètres › Sécurité › Accès à l'utilisation des applis.
+        Décommentez pour une future implémentation réelle.
+    -->
+    <!--
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    -->
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="false"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

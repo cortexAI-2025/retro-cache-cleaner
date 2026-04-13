@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Pixelated Windows NT4-style warning icon.
+    Yellow triangle + black "!" — 32 × 32 dp viewport.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+
+    <!-- Yellow triangle fill -->
+    <path
+        android:fillColor="#FFFF00"
+        android:pathData="M16,2 L30,29 L2,29 Z" />
+
+    <!-- Black triangle border -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="1.5"
+        android:pathData="M16,2 L30,29 L2,29 Z" />
+
+    <!-- Exclamation mark — body (thick rectangle) -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M14.5,11 L17.5,11 L17,21 L15,21 Z" />
+
+    <!-- Exclamation mark — dot -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M14.5,23 L17.5,23 L17.5,26.5 L14.5,26.5 Z" />
+
+</vector>

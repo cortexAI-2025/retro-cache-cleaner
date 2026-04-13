@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Windows NT4-style RAISED 3-D bevel button (normal / up state).
+
+    Layer order (bottom → top):
+      1. Black — full rectangle → outer border
+      2. White — inset 1dp from right+bottom → top-left highlight
+      3. Dark gray — inset 1dp from left+top → bottom-right shadow
+      4. Gray face — inset 2dp all sides → button surface
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#000000" />
+        </shape>
+    </item>
+
+    <item android:right="1dp" android:bottom="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+        </shape>
+    </item>
+
+    <item android:left="1dp" android:top="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#808080" />
+        </shape>
+    </item>
+
+    <item android:left="2dp" android:top="2dp" android:right="2dp" android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#C0C0C0" />
+        </shape>
+    </item>
+
+</layer-list>

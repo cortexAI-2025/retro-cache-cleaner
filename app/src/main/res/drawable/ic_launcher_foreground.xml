@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon foreground — retro floppy-disk style "RC" monogram -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Dark blue background square (safe zone) -->
+    <path
+        android:fillColor="#000080"
+        android:pathData="M18,18 L90,18 L90,90 L18,90 Z" />
+
+    <!-- White border -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:pathData="M18,18 L90,18 L90,90 L18,90 Z" />
+
+    <!-- "RC" text represented as simple path shapes -->
+    <!-- R -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,36 L28,72 L34,72 L34,57 L40,57 L46,72 L53,72 L46,55 C50,53 52,49 52,45 C52,40 48,36 43,36 Z
+                         M34,42 L42,42 C44,42 46,44 46,46 C46,48 44,50 42,50 L34,50 Z" />
+    <!-- C -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M80,42 C76,38 70,36 64,36 C55,36 48,43 48,54 C48,65 55,72 64,72 C70,72 76,70 80,66 L75,62 C73,64 69,66 64,66 C58,66 54,61 54,54 C54,47 58,42 64,42 C69,42 73,44 75,46 Z" />
+
+</vector>

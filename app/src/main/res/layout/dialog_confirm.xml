@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Retro Windows NT4-style confirmation dialog.
+    Layout: custom title bar + icon + message + [OK] [Annuler]
+    The outer LinearLayout acts as the window frame (raised bevel).
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="300dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_panel_raised">
+
+    <!-- ── Dialog Title Bar ─────────────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="26dp"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_title_bar"
+        android:gravity="center_vertical"
+        android:paddingStart="6dp"
+        android:paddingEnd="4dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:layout_marginTop="2dp">
+
+        <!-- Small dialog icon (stylised "!") -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="!"
+            android:textColor="@color/win_white"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="5dp" />
+
+        <TextView
+            android:id="@+id/dialog_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/dialog_confirm_title"
+            android:textColor="@color/win_white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif" />
+
+        <Button
+            style="@style/RetroButton.WinControl"
+            android:layout_width="19dp"
+            android:layout_height="19dp"
+            android:text="X"
+            android:textStyle="bold"
+            android:textColor="@color/win_black"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- ── Content: icon + message ──────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="14dp"
+        android:gravity="top">
+
+        <!-- Warning icon (yellow triangle with "!") -->
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_warning"
+            android:layout_marginEnd="12dp"
+            android:layout_marginTop="2dp"
+            android:scaleType="fitCenter" />
+
+        <!-- Message text -->
+        <TextView
+            android:id="@+id/dialog_message"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/win_text"
+            android:lineSpacingExtra="2dp" />
+
+    </LinearLayout>
+
+    <!-- Etched separator above buttons -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@drawable/bg_separator_h"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- ── Buttons ───────────────────────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="10dp">
+
+        <Button
+            android:id="@+id/btn_ok"
+            style="@style/RetroButton"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_ok"
+            android:layout_marginEnd="10dp" />
+
+        <Button
+            android:id="@+id/btn_cancel"
+            style="@style/RetroButton"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_cancel" />
+
+    </LinearLayout>
+
+</LinearLayout>

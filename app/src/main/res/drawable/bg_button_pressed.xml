@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Windows NT4-style DEPRESSED 3-D bevel button (pressed / down state).
+    Highlights and shadows are swapped → gives the "pushed in" look.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#000000" />
+        </shape>
+    </item>
+
+    <!-- Shadow on top-left when pressed -->
+    <item android:right="1dp" android:bottom="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#808080" />
+        </shape>
+    </item>
+
+    <!-- Highlight on bottom-right when pressed -->
+    <item android:left="1dp" android:top="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+        </shape>
+    </item>
+
+    <!-- Slightly darker face to reinforce the "pressed" feel -->
+    <item android:left="2dp" android:top="2dp" android:right="2dp" android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#B8B8B8" />
+        </shape>
+    </item>
+
+</layer-list>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ── Windows NT4 / Win9x Palette ─────────────────────── -->
+    <color name="win_gray">#C0C0C0</color>
+    <color name="win_dark_gray">#808080</color>
+    <color name="win_darker">#404040</color>
+    <color name="win_black">#000000</color>
+    <color name="win_white">#FFFFFF</color>
+
+    <!-- Title bar gradient -->
+    <color name="win_title_blue_start">#000080</color>
+    <color name="win_title_blue_end">#1084D0</color>
+
+    <!-- Progress bar fill -->
+    <color name="win_progress_blue">#0000AA</color>
+
+    <!-- List & text -->
+    <color name="win_text">#000000</color>
+    <color name="win_text_gray">#808080</color>
+    <color name="win_text_selected">#FFFFFF</color>
+    <color name="win_selection_bg">#000080</color>
+    <color name="win_list_bg">#FFFFFF</color>
+
+    <!-- Warning icon -->
+    <color name="win_warning_yellow">#FFFF00</color>
+
+    <!-- Cache size colour coding -->
+    <color name="cache_large">#800000</color>   <!-- > 100 MB: dark red  -->
+    <color name="cache_medium">#000080</color>  <!-- > 10 MB:  navy      -->
+    <color name="cache_small">#006400</color>   <!-- ≤ 10 MB:  dark green-->
+</resources>

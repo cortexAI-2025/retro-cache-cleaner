@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  Retro Cache Cleaner — activity_main.xml                                     ║
+║  Style: Windows NT4 / Win9x desktop application window                       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/win_gray">
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         TITLE BAR — Blue gradient, white bold title, [_][□][✕] controls
+         ══════════════════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="28dp"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_title_bar"
+        android:gravity="center_vertical"
+        android:paddingStart="6dp"
+        android:paddingEnd="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/title_bar_text"
+            android:textColor="@color/win_white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            android:singleLine="true" />
+
+        <!-- Window control: Minimise -->
+        <Button
+            style="@style/RetroButton.WinControl"
+            android:layout_width="19dp"
+            android:layout_height="19dp"
+            android:text="_"
+            android:textColor="@color/win_black"
+            android:gravity="center_horizontal|bottom"
+            android:layout_marginEnd="2dp" />
+
+        <!-- Window control: Maximise -->
+        <Button
+            style="@style/RetroButton.WinControl"
+            android:layout_width="19dp"
+            android:layout_height="19dp"
+            android:text="□"
+            android:textColor="@color/win_black"
+            android:gravity="center"
+            android:layout_marginEnd="2dp" />
+
+        <!-- Window control: Close -->
+        <Button
+            style="@style/RetroButton.WinControl"
+            android:layout_width="19dp"
+            android:layout_height="19dp"
+            android:text="X"
+            android:textStyle="bold"
+            android:textColor="@color/win_black"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         MENU BAR — Fichier | Affichage | ?
+         ══════════════════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/win_gray"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:paddingTop="1dp"
+        android:paddingBottom="1dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_menu_file"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/win_text"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_menu_view"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/win_text"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_menu_help"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/win_text"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp" />
+
+    </LinearLayout>
+
+    <!-- Etched separator below menu bar -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@drawable/bg_separator_h" />
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         MAIN CLIENT AREA
+         ══════════════════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:background="@color/win_gray"
+        android:padding="6dp">
+
+        <!-- ── TOOLBAR ─────────────────────────────────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="5dp">
+
+            <Button
+                android:id="@+id/btn_scan"
+                style="@style/RetroButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_scan"
+                android:layout_marginEnd="6dp" />
+
+            <Button
+                android:id="@+id/btn_purge"
+                style="@style/RetroButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_purge"
+                android:enabled="false" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/total_cache_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/total_cache_empty"
+                android:textSize="11sp"
+                android:fontFamily="monospace"
+                android:textColor="@color/win_text" />
+
+        </LinearLayout>
+
+        <!-- Etched separator below toolbar -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@drawable/bg_separator_h"
+            android:layout_marginBottom="5dp" />
+
+        <!-- ── PROGRESS BAR (hidden until scan starts) ────────────────────── -->
+        <TextView
+            android:id="@+id/label_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_progress"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/win_text"
+            android:paddingBottom="2dp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/progress_container"
+            android:layout_width="match_parent"
+            android:layout_height="22dp"
+            android:background="@drawable/bg_progress_panel"
+            android:padding="2dp"
+            android:layout_marginBottom="5dp"
+            android:visibility="gone">
+
+            <com.retrocache.cleaner.RetroProgressBar
+                android:id="@+id/retro_progress_bar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
+
+        <!-- ── STATUS LINE ────────────────────────────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_panel_sunken"
+            android:padding="4dp"
+            android:layout_marginBottom="5dp">
+
+            <TextView
+                android:id="@+id/status_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/status_idle"
+                android:textSize="11sp"
+                android:fontFamily="monospace"
+                android:textColor="@color/win_text"
+                android:singleLine="true"
+                android:ellipsize="end" />
+
+        </LinearLayout>
+
+        <!-- ── LIST COLUMN HEADERS (raised bevel background) ─────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/col_application"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif"
+                android:textStyle="bold"
+                android:textColor="@color/win_text"
+                android:background="@drawable/bg_button_normal"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/win_dark_gray" />
+
+            <TextView
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:text="@string/col_cache"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif"
+                android:textStyle="bold"
+                android:textColor="@color/win_text"
+                android:gravity="end"
+                android:background="@drawable/bg_button_normal"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp" />
+
+        </LinearLayout>
+
+        <!-- ── APP LIST (sunken panel, fills remaining space) ─────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_panel_sunken"
+            android:padding="2dp">
+
+            <ListView
+                android:id="@+id/app_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/win_list_bg"
+                android:divider="@color/win_dark_gray"
+                android:dividerHeight="1dp"
+                android:scrollbars="vertical"
+                android:fadeScrollbars="false"
+                android:overScrollMode="never" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         BOTTOM STATUS BAR — object count + version label
+         ══════════════════════════════════════════════════════════════════════ -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@drawable/bg_separator_h" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="22dp"
+        android:orientation="horizontal"
+        android:background="@color/win_gray"
+        android:gravity="center_vertical"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:paddingTop="1dp"
+        android:paddingBottom="1dp">
+
+        <TextView
+            android:id="@+id/bottom_status"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="0 objet(s)"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/win_text"
+            android:gravity="start|center_vertical"
+            android:background="@drawable/bg_panel_sunken_status"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:layout_marginEnd="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="@string/version_label"
+            android:textSize="10sp"
+            android:fontFamily="monospace"
+            android:textColor="@color/win_text_gray"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_panel_sunken_status"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

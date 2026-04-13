@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Retro Cache Cleaner</string>
+    <string name="title_bar_text">Retro Cache Cleaner v1.0</string>
+
+    <!-- Toolbar -->
+    <string name="btn_scan">Scan</string>
+    <string name="btn_purge">Purger le cache</string>
+
+    <!-- Status messages -->
+    <string name="status_idle">Prêt — Appuyez sur [Scan] pour analyser le système.</string>
+    <string name="status_scanning">Analyse en cours\u2026</string>
+
+    <!-- Dialog -->
+    <string name="dialog_confirm_title">Confirmation</string>
+    <string name="btn_ok">OK</string>
+    <string name="btn_cancel">Annuler</string>
+
+    <!-- Misc -->
+    <string name="select_app_hint">Sélectionnez une application dans la liste.</string>
+    <string name="col_application">Application</string>
+    <string name="col_cache">Cache</string>
+    <string name="total_cache_empty">Cache total : —</string>
+    <string name="label_progress">Progression :</string>
+    <string name="label_menu_file">Fichier</string>
+    <string name="label_menu_view">Affichage</string>
+    <string name="label_menu_help">?</string>
+    <string name="version_label">RetroCacheCleaner v1.0</string>
+</resources>
