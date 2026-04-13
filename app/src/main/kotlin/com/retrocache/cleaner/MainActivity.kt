@@ -2,7 +2,6 @@ package com.retrocache.cleaner
 
 import android.content.Intent
 import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -127,12 +126,21 @@ class MainActivity : AppCompatActivity() {
         bgExecutor.execute {
             val pm = packageManager
 
-            // ── Enumerate non-system packages ──────────────────────────────
-            // NOTE: On Android 11+ QUERY_ALL_PACKAGES permission is required
-            // (declared in AndroidManifest.xml).
-            val rawList = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+            // ── Enumerate launchable (user-visible) apps ───────────────────
+            // queryIntentActivities + <queries> in AndroidManifest is the
+            // Play-Store-safe alternative to QUERY_ALL_PACKAGES.
+            // It returns every app that exposes a launcher icon, which is
+            // exactly the set a user wants to manage cache for.
+            // Compatible API 21+ ; on API 30+ visibility is granted via <queries>.
+            val launchIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+            }
+            @Suppress("DEPRECATION")   // API 33+ uses ResolveInfoFlags — compatible here
+            val rawList = pm.queryIntentActivities(launchIntent, 0)
+                .map { it.activityInfo.applicationInfo }
                 .filter { info -> (info.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
-                .sortedBy  { info ->
+                .distinctBy { info -> info.packageName }   // deduplicate split-APK entries
+                .sortedBy { info ->
                     runCatching { pm.getApplicationLabel(info).toString().lowercase() }
                         .getOrElse { info.packageName }
                 }

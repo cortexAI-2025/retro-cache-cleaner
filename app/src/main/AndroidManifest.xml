@@ -3,26 +3,42 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-        QUERY_ALL_PACKAGES : obligatoire sur Android 11+ (API 30+) pour lister
-        toutes les applications installées via getInstalledApplications().
-        Note : Google Play exige une justification lors de la soumission.
-        Pour un usage interne (société), aucun problème.
+    ╔══════════════════════════════════════════════════════════════════════════╗
+    ║  PERMISSIONS — Stratégie Play Store safe                                 ║
+    ╠══════════════════════════════════════════════════════════════════════════╣
+    ║  On évite intentionnellement QUERY_ALL_PACKAGES (nécessite une           ║
+    ║  "Declaration Form" Google Play → risque de rejet automatique).          ║
+    ║                                                                          ║
+    ║  À la place, on utilise le bloc <queries> + queryIntentActivities()      ║
+    ║  avec ACTION_MAIN / CATEGORY_LAUNCHER.                                   ║
+    ║  Résultat identique (apps user visibles) — 100% conforme Play Store.     ║
+    ╚══════════════════════════════════════════════════════════════════════════╝
     -->
-    <uses-permission
-        android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
 
     <!--
-        PACKAGE_USAGE_STATS (optionnel) : permet de lire les vraies tailles de cache
-        via UsageStatsManager. Nécessite une approbation manuelle de l'utilisateur dans
-        Paramètres › Sécurité › Accès à l'utilisation des applis.
-        Décommentez pour une future implémentation réelle.
+        PACKAGE_USAGE_STATS (optionnel, désactivé par défaut) :
+        Permet de lire les vraies tailles de cache via StorageStatsManager.
+        Nécessite une approbation MANUELLE de l'utilisateur dans :
+          Paramètres › Sécurité › Accès à l'utilisation des applications
+        Déclaration Play Store requise. Décommentez uniquement si activé.
     -->
     <!--
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     -->
+
+    <!--
+        <queries> : déclare la visibilité des paquets sans permission large.
+        Android 11+ (API 30) : without this block queryIntentActivities()
+        would return an empty list for third-party apps.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="false"
@@ -31,6 +47,11 @@
         android:label="@string/app_name"
         android:supportsRtl="false"
         android:theme="@style/AppTheme">
+
+        <!--
+            networkSecurityConfig : non déclaré car l'app ne fait AUCUNE
+            requête réseau. Aucune donnée utilisateur transmise ou collectée.
+        -->
 
         <activity
             android:name=".MainActivity"

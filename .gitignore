@@ -3,6 +3,11 @@
 build/
 /local.properties
 
+# ── SIGNING — NEVER commit these files ────────────────────────────────────
+keystore.properties
+*.jks
+*.keystore
+
 # Android Studio
 /.idea/
 *.iml

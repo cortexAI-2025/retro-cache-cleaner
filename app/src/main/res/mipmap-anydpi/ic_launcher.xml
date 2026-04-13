@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Legacy launcher icon — used on devices running Android 7.1 and below
+    (API ≤ 25) where adaptive icons are not supported.
+    On API 26+, the system prefers mipmap-anydpi-v26/ic_launcher.xml instead.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Full-bleed background so the icon is never transparent -->
+    <item android:drawable="@drawable/ic_launcher_foreground" />
+</layer-list>
