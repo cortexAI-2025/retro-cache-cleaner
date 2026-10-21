@@ -77,6 +77,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         bgExecutor.shutdownNow()
+        uiHandler.removeCallbacksAndMessages(null)
     }
 
     // ── View binding ───────────────────────────────────────────────────────

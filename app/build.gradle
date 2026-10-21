@@ -39,7 +39,10 @@ android {
         release {
             minifyEnabled   true
             shrinkResources true
-            signingConfig   signingConfigs.release
+            // Sign only when keystore.properties is present (keeps CI/debug builds working)
+            if (keystorePropsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
                           'proguard-rules.pro'
         }
