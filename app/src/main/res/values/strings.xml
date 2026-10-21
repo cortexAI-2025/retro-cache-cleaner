@@ -14,6 +14,8 @@
 
     <string name="perm_title">Accès aux statistiques de stockage</string>
     <string name="perm_body">Pour afficher le cache et les données réels de chaque application, autorisez Cache Cleaner dans « Accès aux données d’utilisation ».</string>
+    <string name="perm_restricted_hint">Interrupteur grisé (« paramètres restreints ») ? Ouvrez les infos de l’application, touchez ⋮ en haut à droite puis « Autoriser les paramètres restreints », et revenez activer l’accès.</string>
+    <string name="perm_app_info">Infos de l’application</string>
     <string name="perm_button">Autoriser l’accès</string>
 
     <string name="chip_cache">Cache</string>

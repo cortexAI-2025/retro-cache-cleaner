@@ -111,13 +111,35 @@
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="@color/brand_on_secondary_container" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_permission"
-                style="@style/Widget.Material3.Button.TonalButton"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/perm_button" />
+                android:text="@string/perm_restricted_hint"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="@color/brand_on_secondary_container" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_permission"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/perm_button" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_app_info"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/perm_app_info" />
+            </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

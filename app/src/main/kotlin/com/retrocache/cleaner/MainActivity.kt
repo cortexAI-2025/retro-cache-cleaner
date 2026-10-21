@@ -83,6 +83,17 @@ class MainActivity : AppCompatActivity() {
             awaitingPermission = true
             openUsageAccessSettings()
         }
+        findViewById<View>(R.id.btn_app_info).setOnClickListener {
+            try {
+                startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.fromParts("package", packageName, null)
+                    }
+                )
+            } catch (e: Exception) {
+                Toast.makeText(this, R.string.err_open_settings, Toast.LENGTH_SHORT).show()
+            }
+        }
         findViewById<ChipGroup>(R.id.chip_group).setOnCheckedStateChangeListener { _, ids ->
             sortMode = when (ids.firstOrNull()) {
                 R.id.chip_sort_data -> SortMode.DATA
