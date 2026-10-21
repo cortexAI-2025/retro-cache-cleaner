@@ -21,11 +21,15 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
@@ -36,27 +40,41 @@ import java.util.concurrent.Executors
  * StorageStatsManager, nécessite l'accès « statistiques d'utilisation »).
  *
  * Android interdit d'effacer le cache/les données d'une autre application sans intervention :
- * les actions ouvrent donc l'écran « Infos de l'application » du système. La désinstallation
- * ouvre directement la confirmation système.
+ * les actions ouvrent donc l'écran « Infos de l'application » du système. Pour plusieurs
+ * applications, une file guidée ouvre l'écran de la suivante à chaque retour dans l'app.
  */
 class MainActivity : AppCompatActivity() {
 
     private enum class SortMode { CACHE, DATA, NAME }
     private enum class ClearAction { CACHE, DATA, BOTH }
 
+    private lateinit var toolbar: MaterialToolbar
     private lateinit var progress: LinearProgressIndicator
     private lateinit var btnScan: MaterialButton
     private lateinit var permissionCard: View
+    private lateinit var queueCard: View
+    private lateinit var queueText: TextView
+    private lateinit var selectionBar: View
+    private lateinit var btnBulkCache: MaterialButton
+    private lateinit var btnBulkData: MaterialButton
     private lateinit var totalCache: TextView
     private lateinit var totalData: TextView
     private lateinit var statusText: TextView
     private lateinit var adapter: AppAdapter
+    private lateinit var backCallback: OnBackPressedCallback
 
     private val apps = mutableListOf<AppEntry>()
     private var sortMode = SortMode.CACHE
     private var scanning = false
     private var awaitingPermission = false
     private var pendingPackage: String? = null
+
+    private var selectionMode = false
+
+    private val queue = ArrayDeque<AppEntry>()
+    private var queueActive = false
+    private var queueAction = ClearAction.CACHE
+    private var queueTotal = 0
 
     private val bgExecutor = Executors.newSingleThreadExecutor()
     private val uiHandler = Handler(Looper.getMainLooper())
@@ -65,20 +83,52 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        toolbar = findViewById(R.id.toolbar)
         progress = findViewById(R.id.progress)
         btnScan = findViewById(R.id.btn_scan)
         permissionCard = findViewById(R.id.permission_card)
+        queueCard = findViewById(R.id.queue_card)
+        queueText = findViewById(R.id.queue_text)
+        selectionBar = findViewById(R.id.selection_bar)
+        btnBulkCache = findViewById(R.id.btn_bulk_cache)
+        btnBulkData = findViewById(R.id.btn_bulk_data)
         totalCache = findViewById(R.id.total_cache)
         totalData = findViewById(R.id.total_data)
         statusText = findViewById(R.id.status_text)
 
-        adapter = AppAdapter { entry -> showActions(entry) }
+        adapter = AppAdapter(
+            onClick = { entry -> if (selectionMode) toggleSelection(entry) else showActions(entry) },
+            onLongClick = { entry ->
+                if (!selectionMode) enterSelection()
+                toggleSelection(entry)
+            }
+        )
         findViewById<RecyclerView>(R.id.app_list).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = this@MainActivity.adapter
         }
 
+        toolbar.inflateMenu(R.menu.main_menu)
+        toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_select -> { enterSelection(); true }
+                R.id.action_select_all -> { selectAll(); true }
+                R.id.action_close -> { finishAndRemoveTask(); true }
+                else -> false
+            }
+        }
+        toolbar.setNavigationOnClickListener { exitSelection() }
+
+        backCallback = object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() = exitSelection()
+        }
+        onBackPressedDispatcher.addCallback(this, backCallback)
+
         btnScan.setOnClickListener { startScan() }
+        btnBulkCache.setOnClickListener { confirmBulk(ClearAction.CACHE) }
+        btnBulkData.setOnClickListener { confirmBulk(ClearAction.DATA) }
+        findViewById<View>(R.id.queue_next).setOnClickListener { launchNext() }
+        findViewById<View>(R.id.queue_stop).setOnClickListener { endQueue(completed = false) }
         findViewById<View>(R.id.btn_permission).setOnClickListener {
             awaitingPermission = true
             openUsageAccessSettings()
@@ -105,6 +155,7 @@ class MainActivity : AppCompatActivity() {
 
         totalData.text = getString(R.string.summary_data, getString(R.string.value_unknown))
         updatePermissionUi()
+        updateSelectionUi()
         startScan()
     }
 
@@ -120,6 +171,7 @@ class MainActivity : AppCompatActivity() {
             pendingPackage = null
             refreshPackage(it)
         }
+        if (queueActive) renderQueueCard()
     }
 
     override fun onDestroy() {
@@ -185,9 +237,12 @@ class MainActivity : AppCompatActivity() {
         progress.visibility = View.INVISIBLE
         apps.clear()
         apps.addAll(results)
+        val present = apps.map { it.packageName }.toSet()
+        adapter.selected.retainAll(present)
         applySort()
         updateSummary()
         updatePermissionUi()
+        updateSelectionUi()
     }
 
     /** Applications avec icône de lancement, hors système (sauf système mises à jour, ex. Chrome). */
@@ -231,6 +286,125 @@ class MainActivity : AppCompatActivity() {
             totalData.text = getString(R.string.summary_data, getString(R.string.value_unknown))
             statusText.text = getString(R.string.status_no_permission, apps.size)
         }
+    }
+
+    // ── Sélection multiple ───────────────────────────────────────────────────
+
+    private fun enterSelection() {
+        selectionMode = true
+        updateSelectionUi()
+    }
+
+    private fun exitSelection() {
+        selectionMode = false
+        adapter.selected.clear()
+        updateSelectionUi()
+    }
+
+    private fun toggleSelection(entry: AppEntry) {
+        if (!adapter.selected.add(entry.packageName)) adapter.selected.remove(entry.packageName)
+        updateSelectionUi()
+    }
+
+    private fun selectAll() {
+        adapter.selected.addAll(adapter.items.map { it.packageName })
+        updateSelectionUi()
+    }
+
+    private fun updateSelectionUi() {
+        val menu = toolbar.menu
+        menu.findItem(R.id.action_select)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_close)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_select_all)?.isVisible = selectionMode
+
+        if (selectionMode) {
+            toolbar.title = getString(R.string.selected_count, adapter.selected.size)
+            toolbar.setNavigationIcon(R.drawable.ic_close)
+            toolbar.setNavigationContentDescription(R.string.menu_close)
+        } else {
+            toolbar.title = getString(R.string.app_name)
+            toolbar.navigationIcon = null
+        }
+        backCallback.isEnabled = selectionMode
+
+        val chosen = apps.filter { it.packageName in adapter.selected }
+        val showBar = selectionMode && chosen.isNotEmpty()
+        selectionBar.visibility = if (showBar) View.VISIBLE else View.GONE
+        if (showBar) {
+            val known = chosen.any { it.hasStats }
+            btnBulkCache.text = bulkLabel(R.string.bulk_cache, known, chosen.sumOf { it.cacheBytes })
+            btnBulkData.text = bulkLabel(R.string.bulk_data, known, chosen.sumOf { it.dataBytes })
+        }
+
+        adapter.selectionMode = selectionMode
+        adapter.refresh()
+    }
+
+    private fun bulkLabel(base: Int, known: Boolean, bytes: Long): String =
+        if (known) getString(base) + "\n" + Formatter.formatShortFileSize(this, bytes) else getString(base)
+
+    private fun confirmBulk(action: ClearAction) {
+        val targets = adapter.items.filter { entry ->
+            entry.packageName in adapter.selected && when {
+                !entry.hasStats -> true
+                action == ClearAction.CACHE -> entry.cacheBytes > 0
+                else -> entry.dataBytes > 0
+            }
+        }
+        if (targets.isEmpty()) {
+            Toast.makeText(this, R.string.bulk_nothing, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val isData = action == ClearAction.DATA
+        val builder = MaterialAlertDialogBuilder(this)
+            .setTitle(getString(if (isData) R.string.bulk_confirm_data_title else R.string.bulk_confirm_cache_title, targets.size))
+            .setMessage(if (isData) R.string.bulk_confirm_data_msg else R.string.bulk_confirm_cache_msg)
+            .setPositiveButton(R.string.btn_start) { _, _ -> startQueue(targets, action) }
+            .setNegativeButton(R.string.btn_cancel, null)
+        if (isData) builder.setIcon(R.drawable.ic_warning)
+        builder.show()
+    }
+
+    // ── File guidée (plusieurs applications) ─────────────────────────────────
+
+    private fun startQueue(targets: List<AppEntry>, action: ClearAction) {
+        exitSelection()
+        queue.clear()
+        queue.addAll(targets)
+        queueAction = action
+        queueTotal = targets.size
+        queueActive = true
+        launchNext()
+    }
+
+    private fun launchNext() {
+        val next = queue.removeFirstOrNull()
+        if (next == null) {
+            endQueue(completed = true)
+            return
+        }
+        queueCard.visibility = View.GONE
+        if (!launchSettings(next, queueAction)) endQueue(completed = false)
+    }
+
+    /** Affiche, au retour des paramètres, l'application suivante de la file. */
+    private fun renderQueueCard() {
+        val next = queue.firstOrNull()
+        if (next == null) {
+            endQueue(completed = true)
+            return
+        }
+        queueText.text = getString(R.string.queue_next, next.label, queueTotal - queue.size + 1, queueTotal)
+        queueCard.visibility = View.VISIBLE
+    }
+
+    private fun endQueue(completed: Boolean) {
+        val total = queueTotal
+        queue.clear()
+        queueActive = false
+        queueCard.visibility = View.GONE
+        val message = if (completed) getString(R.string.queue_done, total) else getString(R.string.queue_stopped)
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     // ── Actions sur une application ──────────────────────────────────────────
@@ -287,23 +461,26 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun launchSettings(entry: AppEntry, action: ClearAction) {
+    /** Ouvre « Infos de l'application » ; retourne false si l'écran n'a pas pu s'ouvrir. */
+    private fun launchSettings(entry: AppEntry, action: ClearAction): Boolean {
         val guide = when (action) {
             ClearAction.CACHE -> R.string.guide_cache
             ClearAction.DATA -> R.string.guide_data
             ClearAction.BOTH -> R.string.guide_both
         }
         pendingPackage = entry.packageName
-        try {
+        return try {
             startActivity(
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.fromParts("package", entry.packageName, null)
                 }
             )
             Toast.makeText(this, guide, Toast.LENGTH_LONG).show()
+            true
         } catch (e: Exception) {
             pendingPackage = null
             Toast.makeText(this, R.string.err_open_settings, Toast.LENGTH_SHORT).show()
+            false
         }
     }
 
@@ -331,6 +508,8 @@ class MainActivity : AppCompatActivity() {
             uiHandler.post {
                 if (!installed) {
                     apps.removeAll { it.packageName == pkg }
+                    adapter.selected.remove(pkg)
+                    queue.removeAll { it.packageName == pkg }
                 } else if (stats != null) {
                     apps.firstOrNull { it.packageName == pkg }?.let {
                         it.cacheBytes = stats.first
@@ -340,6 +519,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 applySort()
                 updateSummary()
+                updateSelectionUi()
             }
         }
     }
@@ -379,23 +559,32 @@ class MainActivity : AppCompatActivity() {
 
     // ── Liste ────────────────────────────────────────────────────────────────
 
-    private class AppAdapter(private val onClick: (AppEntry) -> Unit) :
-        RecyclerView.Adapter<AppAdapter.VH>() {
+    private class AppAdapter(
+        private val onClick: (AppEntry) -> Unit,
+        private val onLongClick: (AppEntry) -> Unit
+    ) : RecyclerView.Adapter<AppAdapter.VH>() {
 
-        private var items: List<AppEntry> = emptyList()
+        var items: List<AppEntry> = emptyList()
+            private set
+        val selected = mutableSetOf<String>()
+        var selectionMode = false
 
         fun submit(list: List<AppEntry>) {
             items = list
             notifyDataSetChanged()
         }
 
+        fun refresh() = notifyDataSetChanged()
+
         class VH(view: View) : RecyclerView.ViewHolder(view) {
+            val card: MaterialCardView = view as MaterialCardView
             val icon: ImageView = view.findViewById(R.id.iv_icon)
             val name: TextView = view.findViewById(R.id.tv_name)
             val pkg: TextView = view.findViewById(R.id.tv_package)
             val pills: View = view.findViewById(R.id.pills)
             val cache: TextView = view.findViewById(R.id.tv_cache)
             val data: TextView = view.findViewById(R.id.tv_data)
+            val check: ImageView = view.findViewById(R.id.iv_check)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH =
@@ -406,6 +595,8 @@ class MainActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: VH, position: Int) {
             val entry = items[position]
             val ctx = holder.itemView.context
+            val isSelected = selectionMode && entry.packageName in selected
+
             holder.icon.setImageDrawable(entry.icon)
             holder.name.text = entry.label
             holder.pkg.text = entry.packageName
@@ -416,7 +607,15 @@ class MainActivity : AppCompatActivity() {
                 holder.data.text = ctx.getString(
                     R.string.pill_data, Formatter.formatShortFileSize(ctx, entry.dataBytes))
             }
+
+            holder.card.setCardBackgroundColor(
+                ContextCompat.getColor(ctx, if (isSelected) R.color.brand_primary_container else R.color.card_bg))
+            holder.card.strokeColor = ContextCompat.getColor(ctx, R.color.brand_primary)
+            holder.card.strokeWidth = if (isSelected) (2 * ctx.resources.displayMetrics.density).toInt() else 0
+            holder.check.visibility = if (isSelected) View.VISIBLE else View.GONE
+
             holder.itemView.setOnClickListener { onClick(entry) }
+            holder.itemView.setOnLongClickListener { onLongClick(entry); true }
         }
     }
 }

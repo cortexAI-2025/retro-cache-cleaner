@@ -42,4 +42,24 @@
     <string name="guide_data">Ouvrez « Stockage » puis touchez « Supprimer les données ».</string>
     <string name="guide_both">Ouvrez « Stockage » puis touchez « Vider le cache » et « Supprimer les données ».</string>
     <string name="err_open_settings">Impossible d’ouvrir les paramètres.</string>
+
+    <string name="menu_select">Sélectionner</string>
+    <string name="menu_select_all">Tout</string>
+    <string name="menu_close">Fermer</string>
+    <string name="selected_count">%1$d sélectionnée(s)</string>
+
+    <string name="bulk_cache">Vider le cache</string>
+    <string name="bulk_data">Effacer les données</string>
+    <string name="bulk_confirm_cache_title">Vider le cache de %1$d applications ?</string>
+    <string name="bulk_confirm_cache_msg">Android demande de valider chaque application sur son écran système. Cache Cleaner vous guide de l’une à l’autre.</string>
+    <string name="bulk_confirm_data_title">Supprimer les données de %1$d applications ?</string>
+    <string name="bulk_confirm_data_msg">Les données (comptes, réglages, fichiers locaux) seront supprimées définitivement. Android demande de valider chaque application sur son écran système ; Cache Cleaner vous guide de l’une à l’autre.</string>
+    <string name="btn_start">Commencer</string>
+    <string name="bulk_nothing">Rien à effacer pour cette sélection.</string>
+
+    <string name="queue_next">Suivante : %1$s (%2$d/%3$d)</string>
+    <string name="queue_continue">Continuer</string>
+    <string name="queue_stop">Arrêter</string>
+    <string name="queue_done">Terminé : %1$d applications traitées</string>
+    <string name="queue_stopped">Opération arrêtée</string>
 </resources>
