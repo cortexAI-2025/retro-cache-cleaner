@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_primary">#5DD5FC</color>
+    <color name="brand_on_primary">#003545</color>
+    <color name="brand_primary_container">#004D62</color>
+    <color name="brand_on_primary_container">#BDE9FF</color>
+    <color name="brand_secondary_container">#2F4550</color>
+    <color name="brand_on_secondary_container">#D9E4EA</color>
+    <color name="brand_surface">#0F1417</color>
+    <color name="brand_on_surface">#DEE3E6</color>
+    <color name="brand_surface_variant">#40484C</color>
+    <color name="brand_on_surface_variant">#C0C8CD</color>
+    <color name="brand_outline">#8A9296</color>
+    <color name="brand_error">#FFB4AB</color>
+    <color name="brand_error_container">#93000A</color>
+    <color name="brand_on_error_container">#FFDAD6</color>
+    <color name="card_bg">#1B2023</color>
+    <color name="ic_launcher_bg">#006782</color>
+</resources>

@@ -1,77 +1,114 @@
 package com.retrocache.cleaner
 
+import android.app.AppOpsManager
+import android.app.usage.StorageStatsManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
+import android.os.storage.StorageManager
 import android.provider.Settings
+import android.text.format.Formatter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ListView
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.ChipGroup
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import java.util.concurrent.Executors
-import kotlin.random.Random
 
 /**
- * MainActivity — Retro Cache Cleaner
+ * Liste les applications installées avec leur cache et leurs données (valeurs réelles via
+ * StorageStatsManager, nécessite l'accès « statistiques d'utilisation »).
  *
- * Displays the list of installed (non-system) applications alongside an
- * estimated cache size.  The user can select any app and be redirected to
- * the Android system "App Info" page where they can clear the cache manually.
- *
- * Cache sizes are simulated with a realistic probability distribution because
- * reading real per-app cache sizes requires the PACKAGE_USAGE_STATS permission,
- * which itself demands an explicit user opt-in in system settings.
- * A real implementation path is documented in the comments below.
+ * Android interdit d'effacer le cache/les données d'une autre application sans intervention :
+ * les actions ouvrent donc l'écran « Infos de l'application » du système. La désinstallation
+ * ouvre directement la confirmation système.
  */
 class MainActivity : AppCompatActivity() {
 
-    // ── UI references ──────────────────────────────────────────────────────
-    private lateinit var btnScan: Button
-    private lateinit var btnPurge: Button
-    private lateinit var progressContainer: LinearLayout
-    private lateinit var labelProgress: TextView
-    private lateinit var retroProgressBar: RetroProgressBar
+    private enum class SortMode { CACHE, DATA, NAME }
+    private enum class ClearAction { CACHE, DATA, BOTH }
+
+    private lateinit var progress: LinearProgressIndicator
+    private lateinit var btnScan: MaterialButton
+    private lateinit var permissionCard: View
+    private lateinit var totalCache: TextView
+    private lateinit var totalData: TextView
     private lateinit var statusText: TextView
-    private lateinit var totalCacheText: TextView
-    private lateinit var appListView: ListView
-    private lateinit var bottomStatus: TextView
+    private lateinit var adapter: AppAdapter
 
-    // ── State ──────────────────────────────────────────────────────────────
-    private val appList = mutableListOf<AppInfo>()
-    private var selectedIndex = -1
+    private val apps = mutableListOf<AppEntry>()
+    private var sortMode = SortMode.CACHE
+    private var scanning = false
+    private var awaitingPermission = false
+    private var pendingPackage: String? = null
 
-    // ── Threading ──────────────────────────────────────────────────────────
     private val bgExecutor = Executors.newSingleThreadExecutor()
-    private val uiHandler  = Handler(Looper.getMainLooper())
-
-    // ── Data model ─────────────────────────────────────────────────────────
-
-    /** Holds the display data for one installed application. */
-    data class AppInfo(
-        val name: String,
-        val packageName: String,
-        val cacheSize: Long          // bytes — simulated value
-    )
-
-    // ══════════════════════════════════════════════════════════════════════
-    //  Lifecycle
-    // ══════════════════════════════════════════════════════════════════════
+    private val uiHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        bindViews()
-        setupListeners()
+
+        progress = findViewById(R.id.progress)
+        btnScan = findViewById(R.id.btn_scan)
+        permissionCard = findViewById(R.id.permission_card)
+        totalCache = findViewById(R.id.total_cache)
+        totalData = findViewById(R.id.total_data)
+        statusText = findViewById(R.id.status_text)
+
+        adapter = AppAdapter { entry -> showActions(entry) }
+        findViewById<RecyclerView>(R.id.app_list).apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = this@MainActivity.adapter
+        }
+
+        btnScan.setOnClickListener { startScan() }
+        findViewById<View>(R.id.btn_permission).setOnClickListener {
+            awaitingPermission = true
+            openUsageAccessSettings()
+        }
+        findViewById<ChipGroup>(R.id.chip_group).setOnCheckedStateChangeListener { _, ids ->
+            sortMode = when (ids.firstOrNull()) {
+                R.id.chip_sort_data -> SortMode.DATA
+                R.id.chip_sort_name -> SortMode.NAME
+                else -> SortMode.CACHE
+            }
+            applySort()
+        }
+
+        totalData.text = getString(R.string.summary_data, getString(R.string.value_unknown))
+        updatePermissionUi()
+        startScan()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updatePermissionUi()
+        if (awaitingPermission && hasUsageAccess()) {
+            awaitingPermission = false
+            startScan()
+            return
+        }
+        pendingPackage?.let {
+            pendingPackage = null
+            refreshPackage(it)
+        }
     }
 
     override fun onDestroy() {
@@ -80,259 +117,295 @@ class MainActivity : AppCompatActivity() {
         uiHandler.removeCallbacksAndMessages(null)
     }
 
-    // ── View binding ───────────────────────────────────────────────────────
+    // ── Analyse ──────────────────────────────────────────────────────────────
 
-    private fun bindViews() {
-        btnScan           = findViewById(R.id.btn_scan)
-        btnPurge          = findViewById(R.id.btn_purge)
-        progressContainer = findViewById(R.id.progress_container)
-        labelProgress     = findViewById(R.id.label_progress)
-        retroProgressBar  = findViewById(R.id.retro_progress_bar)
-        statusText        = findViewById(R.id.status_text)
-        totalCacheText    = findViewById(R.id.total_cache_text)
-        appListView       = findViewById(R.id.app_list)
-        bottomStatus      = findViewById(R.id.bottom_status)
-    }
-
-    private fun setupListeners() {
-        btnScan.setOnClickListener { startScan() }
-        btnPurge.setOnClickListener {
-            when {
-                selectedIndex < 0 || selectedIndex >= appList.size ->
-                    Toast.makeText(this,
-                        getString(R.string.select_app_hint),
-                        Toast.LENGTH_SHORT).show()
-                else -> showPurgeDialog(appList[selectedIndex])
-            }
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    //  SCAN — enumerate non-system apps in a background thread
-    // ══════════════════════════════════════════════════════════════════════
-
+    @Suppress("DEPRECATION")   // queryIntentActivities(Intent, Int) : seule forme valable avant API 33
     private fun startScan() {
-        // Reset state
-        appList.clear()
-        selectedIndex    = -1
-        appListView.adapter = null
-        btnScan.isEnabled  = false
-        btnPurge.isEnabled = false
-
-        totalCacheText.text = getString(R.string.total_cache_empty)
-        bottomStatus.text   = "Analyse en cours\u2026"
-        showProgress(true)
-        setStatus("Initialisation\u2026")
+        if (scanning) return
+        scanning = true
+        btnScan.isEnabled = false
+        progress.visibility = View.VISIBLE
+        progress.setProgressCompat(0, false)
+        statusText.text = getString(R.string.status_scanning_start)
+        val withStats = hasUsageAccess()
 
         bgExecutor.execute {
             val pm = packageManager
-
-            // ── Enumerate launchable (user-visible) apps ───────────────────
-            // queryIntentActivities + <queries> in AndroidManifest is the
-            // Play-Store-safe alternative to QUERY_ALL_PACKAGES.
-            // It returns every app that exposes a launcher icon, which is
-            // exactly the set a user wants to manage cache for.
-            // Compatible API 21+ ; on API 30+ visibility is granted via <queries>.
-            val launchIntent = Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_LAUNCHER)
-            }
-            @Suppress("DEPRECATION")   // API 33+ uses ResolveInfoFlags — compatible here
-            val rawList = pm.queryIntentActivities(launchIntent, 0)
+            val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            val infos = pm.queryIntentActivities(launcher, 0)
                 .map { it.activityInfo.applicationInfo }
-                .filter { info -> (info.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
-                .distinctBy { info -> info.packageName }   // deduplicate split-APK entries
-                .sortedBy { info ->
-                    runCatching { pm.getApplicationLabel(info).toString().lowercase() }
-                        .getOrElse { info.packageName }
+                .filter { isUserFacing(it) }
+                .distinctBy { it.packageName }
+
+            val total = infos.size
+            val results = ArrayList<AppEntry>(total)
+            var lastPct = -1
+            infos.forEachIndexed { index, info ->
+                val entry = AppEntry(
+                    label = pm.getApplicationLabel(info).toString(),
+                    packageName = info.packageName,
+                    icon = runCatching { pm.getApplicationIcon(info) }.getOrNull()
+                )
+                if (withStats) {
+                    queryStats(info.packageName)?.let { (cache, data) ->
+                        entry.cacheBytes = cache
+                        entry.dataBytes = data
+                        entry.hasStats = true
+                    }
                 }
+                results.add(entry)
 
-            val total   = rawList.size
-            val results = ArrayList<AppInfo>(total)
-
-            rawList.forEachIndexed { index, appInfo ->
-                val appName = runCatching {
-                    pm.getApplicationLabel(appInfo).toString()
-                }.getOrElse { appInfo.packageName }
-
-                // ── Simulated cache size ───────────────────────────────────
-                // Real sizes can be obtained via StorageStatsManager.queryStatsForPackage()
-                // (requires PACKAGE_USAGE_STATS permission + user approval).
-                results.add(AppInfo(appName, appInfo.packageName, simulateCacheSize()))
-
-                // Throttle UI updates: post every item but sleep briefly so
-                // the progress bar animation is visible.
-                val pct = ((index + 1) * 100) / total
-                uiHandler.post {
-                    retroProgressBar.setProgress(pct)
-                    setStatus("Scan\u2026 [${ index + 1 }/$total]  $appName")
+                val pct = (index + 1) * 100 / total
+                if (pct != lastPct) {
+                    lastPct = pct
+                    uiHandler.post {
+                        progress.setProgressCompat(pct, true)
+                        statusText.text = getString(R.string.status_scanning, index + 1, total)
+                    }
                 }
-
-                Thread.sleep(18L)
             }
-
-            // Sort by descending cache size (largest caches first)
-            results.sortByDescending { it.cacheSize }
-
             uiHandler.post { onScanComplete(results) }
         }
     }
 
-    private fun onScanComplete(results: List<AppInfo>) {
-        appList.addAll(results)
-
-        showProgress(false)
+    private fun onScanComplete(results: List<AppEntry>) {
+        scanning = false
         btnScan.isEnabled = true
+        progress.visibility = View.INVISIBLE
+        apps.clear()
+        apps.addAll(results)
+        applySort()
+        updateSummary()
+        updatePermissionUi()
+    }
 
-        val totalBytes = results.sumOf { it.cacheSize }
-        totalCacheText.text = "Cache total estimé : ${formatSize(totalBytes)}"
-        setStatus("Scan terminé — ${results.size} application(s) trouvée(s).")
-        bottomStatus.text   = "${results.size} objet(s)"
+    /** Applications avec icône de lancement, hors système (sauf système mises à jour, ex. Chrome). */
+    private fun isUserFacing(info: ApplicationInfo): Boolean {
+        if (info.packageName == packageName) return false
+        val system = (info.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+        val updated = (info.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+        return !system || updated
+    }
 
-        if (results.isEmpty()) return
+    /** Retourne (cache, données hors cache) ; dataBytes d'Android inclut le cache. */
+    private fun queryStats(pkg: String): Pair<Long, Long>? = try {
+        val ssm = getSystemService(StorageStatsManager::class.java)
+        val s = ssm.queryStatsForPackage(StorageManager.UUID_DEFAULT, pkg, Process.myUserHandle())
+        Pair(s.cacheBytes, (s.dataBytes - s.cacheBytes).coerceAtLeast(0L))
+    } catch (e: Exception) {
+        null
+    }
 
-        val adapter = AppAdapter()
-        appListView.adapter = adapter
-        appListView.setOnItemClickListener { _, _, position, _ ->
-            selectedIndex      = position
-            btnPurge.isEnabled = true
-            adapter.notifyDataSetChanged()
+    private fun applySort() {
+        val sorted = when (sortMode) {
+            SortMode.CACHE -> apps.sortedWith(
+                compareByDescending<AppEntry> { it.cacheBytes }.thenBy { it.label.lowercase() })
+            SortMode.DATA -> apps.sortedWith(
+                compareByDescending<AppEntry> { it.dataBytes }.thenBy { it.label.lowercase() })
+            SortMode.NAME -> apps.sortedBy { it.label.lowercase() }
+        }
+        adapter.submit(sorted)
+    }
+
+    private fun updateSummary() {
+        if (apps.any { it.hasStats }) {
+            totalCache.text = Formatter.formatShortFileSize(this, apps.sumOf { it.cacheBytes })
+            totalData.text = getString(
+                R.string.summary_data,
+                Formatter.formatShortFileSize(this, apps.sumOf { it.dataBytes })
+            )
+            statusText.text = getString(R.string.status_done, apps.size)
+        } else {
+            totalCache.text = getString(R.string.value_unknown)
+            totalData.text = getString(R.string.summary_data, getString(R.string.value_unknown))
+            statusText.text = getString(R.string.status_no_permission, apps.size)
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    //  PURGE DIALOG — Windows NT4-style confirmation box
-    // ══════════════════════════════════════════════════════════════════════
+    // ── Actions sur une application ──────────────────────────────────────────
 
-    private fun showPurgeDialog(app: AppInfo) {
-        val dialogView = LayoutInflater.from(this)
-            .inflate(R.layout.dialog_confirm, null)
+    private fun showActions(entry: AppEntry) {
+        val dialog = BottomSheetDialog(this)
+        val view = LayoutInflater.from(this).inflate(R.layout.sheet_actions, null)
 
-        dialogView.findViewById<TextView>(R.id.dialog_message).text =
-            "Vider le cache de :\n\n" +
-            "   ${app.name}\n\n" +
-            "Taille estimée : ${formatSize(app.cacheSize)}\n\n" +
-            "Vous allez être redirigé vers\n" +
-            "les Paramètres Système Android.\n\n" +
-            "Appuyez sur « Vider le cache »\n" +
-            "pour confirmer l'opération."
+        view.findViewById<ImageView>(R.id.sheet_icon).setImageDrawable(entry.icon)
+        view.findViewById<TextView>(R.id.sheet_name).text = entry.label
+        view.findViewById<TextView>(R.id.sheet_sub).text = entry.packageName
 
-        val dialog = AlertDialog.Builder(this, R.style.RetroDialog)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
+        fun withSize(base: Int, bytes: Long): String =
+            if (entry.hasStats) getString(base) + " · " + Formatter.formatShortFileSize(this, bytes)
+            else getString(base)
 
-        // Transparent window background so our custom raised-bevel layout is
-        // the only chrome visible.
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        dialogView.findViewById<Button>(R.id.btn_ok).setOnClickListener {
-            dialog.dismiss()
-            openAppSettings(app.packageName)
+        view.findViewById<MaterialButton>(R.id.btn_clear_cache).apply {
+            text = withSize(R.string.action_cache, entry.cacheBytes)
+            setOnClickListener { dialog.dismiss(); launchSettings(entry, ClearAction.CACHE) }
         }
-        dialogView.findViewById<Button>(R.id.btn_cancel).setOnClickListener {
+        view.findViewById<MaterialButton>(R.id.btn_clear_data).apply {
+            text = withSize(R.string.action_data, entry.dataBytes)
+            setOnClickListener {
+                dialog.dismiss()
+                confirmThenLaunch(entry, ClearAction.DATA)
+            }
+        }
+        view.findViewById<MaterialButton>(R.id.btn_clear_both).apply {
+            text = withSize(R.string.action_both, entry.cacheBytes + entry.dataBytes)
+            setOnClickListener {
+                dialog.dismiss()
+                confirmThenLaunch(entry, ClearAction.BOTH)
+            }
+        }
+        view.findViewById<MaterialButton>(R.id.btn_uninstall).setOnClickListener {
             dialog.dismiss()
+            uninstall(entry)
         }
 
+        dialog.setContentView(view)
         dialog.show()
     }
 
-    /**
-     * Opens the system "App Info" screen for [packageName].
-     * The user can then tap "Vider le cache" (Clear cache) manually.
-     * This is the only approach that works without root on modern Android.
-     */
-    private fun openAppSettings(packageName: String) {
-        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.fromParts("package", packageName, null)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        startActivity(intent)
+    /** La suppression des données est irréversible : confirmation avant de rediriger. */
+    private fun confirmThenLaunch(entry: AppEntry, action: ClearAction) {
+        val title = if (action == ClearAction.DATA) R.string.confirm_data_title else R.string.confirm_both_title
+        val message = if (action == ClearAction.DATA) R.string.confirm_data_msg else R.string.confirm_both_msg
+        MaterialAlertDialogBuilder(this)
+            .setIcon(R.drawable.ic_warning)
+            .setTitle(title)
+            .setMessage(getString(message, entry.label))
+            .setPositiveButton(R.string.btn_continue) { _, _ -> launchSettings(entry, action) }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    //  LIST ADAPTER
-    // ══════════════════════════════════════════════════════════════════════
+    private fun launchSettings(entry: AppEntry, action: ClearAction) {
+        val guide = when (action) {
+            ClearAction.CACHE -> R.string.guide_cache
+            ClearAction.DATA -> R.string.guide_data
+            ClearAction.BOTH -> R.string.guide_both
+        }
+        pendingPackage = entry.packageName
+        try {
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", entry.packageName, null)
+                }
+            )
+            Toast.makeText(this, guide, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            pendingPackage = null
+            Toast.makeText(this, R.string.err_open_settings, Toast.LENGTH_SHORT).show()
+        }
+    }
 
-    inner class AppAdapter : BaseAdapter() {
+    private fun uninstall(entry: AppEntry) {
+        pendingPackage = entry.packageName
+        try {
+            startActivity(Intent(Intent.ACTION_DELETE, Uri.fromParts("package", entry.packageName, null)))
+        } catch (e: Exception) {
+            pendingPackage = null
+            Toast.makeText(this, R.string.err_open_settings, Toast.LENGTH_SHORT).show()
+        }
+    }
 
-        override fun getCount(): Int           = appList.size
-        override fun getItem(pos: Int): AppInfo = appList[pos]
-        override fun getItemId(pos: Int): Long  = pos.toLong()
-
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            val view = convertView
-                ?: LayoutInflater.from(parent.context)
-                    .inflate(R.layout.item_app, parent, false)
-
-            val app        = appList[position]
-            val isSelected = (position == selectedIndex)
-
-            val tvName  = view.findViewById<TextView>(R.id.tv_app_name)
-            val tvPkg   = view.findViewById<TextView>(R.id.tv_app_package)
-            val tvCache = view.findViewById<TextView>(R.id.tv_app_cache)
-
-            tvName.text  = app.name
-            tvPkg.text   = app.packageName
-            tvCache.text = formatSize(app.cacheSize)
-
-            if (isSelected) {
-                // Windows-style selection: solid navy + white text
-                view.setBackgroundColor(0xFF000080.toInt())
-                tvName.setTextColor(0xFFFFFFFF.toInt())
-                tvPkg.setTextColor(0xFFCCCCCC.toInt())
-                tvCache.setTextColor(0xFFFFFFFF.toInt())
-            } else {
-                view.setBackgroundColor(0xFFFFFFFF.toInt())
-                tvName.setTextColor(0xFF000000.toInt())
-                tvPkg.setTextColor(0xFF808080.toInt())
-                // Colour-code cache size: red > 100 MB, navy > 10 MB, green otherwise
-                tvCache.setTextColor(
-                    when {
-                        app.cacheSize >= 100_000_000L -> 0xFF800000.toInt()  // dark red
-                        app.cacheSize >=  10_000_000L -> 0xFF000080.toInt()  // navy
-                        else                          -> 0xFF006400.toInt()  // dark green
-                    }
-                )
+    /** Au retour des paramètres : met à jour les tailles de l'application, ou la retire si désinstallée. */
+    @Suppress("DEPRECATION")   // getApplicationInfo(String, Int) : seule forme valable avant API 33
+    private fun refreshPackage(pkg: String) {
+        bgExecutor.execute {
+            val installed = try {
+                packageManager.getApplicationInfo(pkg, 0)
+                true
+            } catch (e: PackageManager.NameNotFoundException) {
+                false
             }
-
-            return view
+            val stats = if (installed && hasUsageAccess()) queryStats(pkg) else null
+            uiHandler.post {
+                if (!installed) {
+                    apps.removeAll { it.packageName == pkg }
+                } else if (stats != null) {
+                    apps.firstOrNull { it.packageName == pkg }?.let {
+                        it.cacheBytes = stats.first
+                        it.dataBytes = stats.second
+                        it.hasStats = true
+                    }
+                }
+                applySort()
+                updateSummary()
+            }
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    //  HELPERS
-    // ══════════════════════════════════════════════════════════════════════
+    // ── Accès aux statistiques d'utilisation ─────────────────────────────────
 
-    private fun showProgress(visible: Boolean) {
-        val state = if (visible) View.VISIBLE else View.GONE
-        progressContainer.visibility = state
-        labelProgress.visibility     = state
+    private fun hasUsageAccess(): Boolean {
+        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), packageName)
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), packageName)
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
     }
 
-    private fun setStatus(text: String) {
-        statusText.text = text
+    private fun updatePermissionUi() {
+        permissionCard.visibility = if (hasUsageAccess()) View.GONE else View.VISIBLE
     }
 
-    /**
-     * Returns a weighted random cache size in bytes that approximates a
-     * realistic distribution of app cache sizes:
-     *   - 10 % very large   (500 MB – 2 GB)  — games, streaming apps
-     *   - 20 % large        (50 – 500 MB)     — social media, maps
-     *   - 30 % medium       (5 – 50 MB)       — typical productivity apps
-     *   - 40 % small        (0 – 5 MB)        — utilities, system tools
-     */
-    private fun simulateCacheSize(): Long = when (Random.nextInt(10)) {
-        0       -> Random.nextLong(500_000_000L, 2_000_000_000L)
-        1, 2    -> Random.nextLong( 50_000_000L,   500_000_000L)
-        3, 4, 5 -> Random.nextLong(  5_000_000L,    50_000_000L)
-        else    -> Random.nextLong(          0L,     5_000_000L)
+    private fun openUsageAccessSettings() {
+        try {
+            startActivity(
+                Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+            )
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+            } catch (e2: Exception) {
+                Toast.makeText(this, R.string.err_open_settings, Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
-    /** Human-readable file size in French-locale units. */
-    private fun formatSize(bytes: Long): String = when {
-        bytes >= 1_073_741_824L -> "%.1f Go".format(bytes / 1_073_741_824.0)
-        bytes >= 1_048_576L     -> "%.1f Mo".format(bytes / 1_048_576.0)
-        bytes >= 1_024L         -> "%.1f Ko".format(bytes / 1_024.0)
-        else                    -> "$bytes o"
+    // ── Liste ────────────────────────────────────────────────────────────────
+
+    private class AppAdapter(private val onClick: (AppEntry) -> Unit) :
+        RecyclerView.Adapter<AppAdapter.VH>() {
+
+        private var items: List<AppEntry> = emptyList()
+
+        fun submit(list: List<AppEntry>) {
+            items = list
+            notifyDataSetChanged()
+        }
+
+        class VH(view: View) : RecyclerView.ViewHolder(view) {
+            val icon: ImageView = view.findViewById(R.id.iv_icon)
+            val name: TextView = view.findViewById(R.id.tv_name)
+            val pkg: TextView = view.findViewById(R.id.tv_package)
+            val pills: View = view.findViewById(R.id.pills)
+            val cache: TextView = view.findViewById(R.id.tv_cache)
+            val data: TextView = view.findViewById(R.id.tv_data)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH =
+            VH(LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false))
+
+        override fun getItemCount(): Int = items.size
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val entry = items[position]
+            val ctx = holder.itemView.context
+            holder.icon.setImageDrawable(entry.icon)
+            holder.name.text = entry.label
+            holder.pkg.text = entry.packageName
+            holder.pills.visibility = if (entry.hasStats) View.VISIBLE else View.GONE
+            if (entry.hasStats) {
+                holder.cache.text = ctx.getString(
+                    R.string.pill_cache, Formatter.formatShortFileSize(ctx, entry.cacheBytes))
+                holder.data.text = ctx.getString(
+                    R.string.pill_data, Formatter.formatShortFileSize(ctx, entry.dataBytes))
+            }
+            holder.itemView.setOnClickListener { onClick(entry) }
+        }
     }
 }

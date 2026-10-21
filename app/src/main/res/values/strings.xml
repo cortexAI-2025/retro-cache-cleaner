@@ -1,29 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Retro Cache Cleaner</string>
-    <string name="title_bar_text">Retro Cache Cleaner v1.0</string>
+    <string name="app_name">Cache Cleaner</string>
 
-    <!-- Toolbar -->
-    <string name="btn_scan">Scan</string>
-    <string name="btn_purge">Purger le cache</string>
+    <string name="summary_cache_label">Cache récupérable</string>
+    <string name="summary_data">Données utilisateur : %1$s</string>
+    <string name="value_unknown">—</string>
+    <string name="btn_scan">Analyser</string>
 
-    <!-- Status messages -->
-    <string name="status_idle">Prêt — Appuyez sur [Scan] pour analyser le système.</string>
-    <string name="status_scanning">Analyse en cours\u2026</string>
+    <string name="status_scanning_start">Analyse en cours…</string>
+    <string name="status_scanning">Analyse %1$d/%2$d</string>
+    <string name="status_done">%1$d applications analysées</string>
+    <string name="status_no_permission">%1$d applications · tailles indisponibles</string>
 
-    <!-- Dialog -->
-    <string name="dialog_confirm_title">Confirmation</string>
-    <string name="btn_ok">OK</string>
+    <string name="perm_title">Accès aux statistiques de stockage</string>
+    <string name="perm_body">Pour afficher le cache et les données réels de chaque application, autorisez Cache Cleaner dans « Accès aux données d’utilisation ».</string>
+    <string name="perm_button">Autoriser l’accès</string>
+
+    <string name="chip_cache">Cache</string>
+    <string name="chip_data">Données</string>
+    <string name="chip_name">Nom</string>
+
+    <string name="pill_cache">Cache %1$s</string>
+    <string name="pill_data">Données %1$s</string>
+
+    <string name="sheet_hint">Android n’autorise pas une application à effacer seule le cache ou les données d’une autre. Vous serez redirigé vers ses paramètres pour valider.</string>
+    <string name="action_cache">Vider le cache</string>
+    <string name="action_data">Supprimer les données</string>
+    <string name="action_both">Vider le cache et les données</string>
+    <string name="action_uninstall">Désinstaller l’application</string>
+
+    <string name="confirm_data_title">Supprimer les données ?</string>
+    <string name="confirm_data_msg">Les données de %1$s (comptes, réglages, fichiers locaux) seront supprimées définitivement.</string>
+    <string name="confirm_both_title">Vider cache et données ?</string>
+    <string name="confirm_both_msg">Le cache et les données de %1$s seront supprimés. Les données ne peuvent pas être restaurées.</string>
+    <string name="btn_continue">Continuer</string>
     <string name="btn_cancel">Annuler</string>
 
-    <!-- Misc -->
-    <string name="select_app_hint">Sélectionnez une application dans la liste.</string>
-    <string name="col_application">Application</string>
-    <string name="col_cache">Cache</string>
-    <string name="total_cache_empty">Cache total : —</string>
-    <string name="label_progress">Progression :</string>
-    <string name="label_menu_file">Fichier</string>
-    <string name="label_menu_view">Affichage</string>
-    <string name="label_menu_help">?</string>
-    <string name="version_label">RetroCacheCleaner v1.0</string>
+    <string name="guide_cache">Ouvrez « Stockage » puis touchez « Vider le cache ».</string>
+    <string name="guide_data">Ouvrez « Stockage » puis touchez « Supprimer les données ».</string>
+    <string name="guide_both">Ouvrez « Stockage » puis touchez « Vider le cache » et « Supprimer les données ».</string>
+    <string name="err_open_settings">Impossible d’ouvrir les paramètres.</string>
 </resources>

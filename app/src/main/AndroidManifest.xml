@@ -2,37 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!--
-    ╔══════════════════════════════════════════════════════════════════════════╗
-    ║  PERMISSIONS — Stratégie Play Store safe                                 ║
-    ╠══════════════════════════════════════════════════════════════════════════╣
-    ║  On évite intentionnellement QUERY_ALL_PACKAGES (nécessite une           ║
-    ║  "Declaration Form" Google Play → risque de rejet automatique).          ║
-    ║                                                                          ║
-    ║  À la place, on utilise le bloc <queries> + queryIntentActivities()      ║
-    ║  avec ACTION_MAIN / CATEGORY_LAUNCHER.                                   ║
-    ║  Résultat identique (apps user visibles) — 100% conforme Play Store.     ║
-    ╚══════════════════════════════════════════════════════════════════════════╝
-    -->
-
-    <!--
-        PACKAGE_USAGE_STATS (optionnel, désactivé par défaut) :
-        Permet de lire les vraies tailles de cache via StorageStatsManager.
-        Nécessite une approbation MANUELLE de l'utilisateur dans :
-          Paramètres › Sécurité › Accès à l'utilisation des applications
-        Déclaration Play Store requise. Décommentez uniquement si activé.
-    -->
-    <!--
+    <!-- Lecture des vraies tailles cache / données (StorageStatsManager).
+         L'utilisateur l'accorde dans Paramètres > Accès aux données d'utilisation. -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
-    -->
 
-    <!--
-        <queries> : déclare la visibilité des paquets sans permission large.
-        Android 11+ (API 30) : without this block queryIntentActivities()
-        would return an empty list for third-party apps.
-    -->
+    <!-- Permet d'ouvrir la boîte de désinstallation système d'une application. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
+    <!-- Visibilité des applications lançables (alternative à QUERY_ALL_PACKAGES). -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -45,18 +24,12 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
-        android:supportsRtl="false"
+        android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
-        <!--
-            networkSecurityConfig : non déclaré car l'app ne fait AUCUNE
-            requête réseau. Aucune donnée utilisateur transmise ou collectée.
-        -->
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
             android:windowSoftInputMode="stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -23,7 +23,7 @@
 | Messages / e-mails | **Non** | — |
 | Photos / vidéos | **Non** | — |
 | Fichiers de l'appareil | **Non** | — |
-| Applications installées | **Lecture locale uniquement** | La liste des applications est affichée à l'écran uniquement ; elle n'est jamais transmise. |
+| Applications installées et tailles cache/données | **Lecture locale uniquement** | Affichées à l'écran uniquement ; jamais transmises. |
 | Identifiants appareil | **Non** | — |
 | Données d'utilisation | **Non** | — |
 
@@ -31,14 +31,17 @@
 
 ## 3. Fonctionnement technique
 
-L'application interroge le système Android (`PackageManager`) pour lister
-les applications installées par l'utilisateur. Ces informations sont :
+L'application interroge le système Android pour lister les applications installées
+et lire, pour chacune, la taille de son cache et de ses données (`StorageStatsManager`).
+Ces informations sont :
 
 - **uniquement affichées à l'écran**, dans la session en cours ;
-- **jamais enregistrées** sur le stockage local (pas de base de données, pas de fichiers) ;
+- **jamais enregistrées** sur l'appareil (pas de base de données, pas de fichiers) ;
 - **jamais transmises** sur Internet ou vers un serveur distant.
 
 L'application **ne contient aucun SDK tiers** (analytics, publicité, télémétrie).
+Elle n'efface rien elle-même : elle ouvre les écrans système (infos de l'application,
+désinstallation) où l'utilisateur confirme chaque action.
 
 ---
 
@@ -46,10 +49,11 @@ L'application **ne contient aucun SDK tiers** (analytics, publicité, télémét
 
 | Permission | Motif |
 |---|---|
-| `android.intent.action.MAIN` + `LAUNCHER` (visibilité paquets) | Lister les applications installées par l'utilisateur pour les afficher dans l'interface. |
+| `PACKAGE_USAGE_STATS` (accès aux données d'utilisation, accordé manuellement par l'utilisateur) | Lire la taille réelle du cache et des données de chaque application. |
+| `REQUEST_DELETE_PACKAGES` | Ouvrir la boîte de désinstallation système pour l'application choisie par l'utilisateur. |
+| `<queries>` (`MAIN` + `LAUNCHER`) | Voir les applications lançables pour les afficher. |
 
-> **Note :** L'application n'utilise *pas* `QUERY_ALL_PACKAGES`. La visibilité
-> des paquets est déclarée via le mécanisme `<queries>` d'Android 11+.
+> **Note :** L'application n'utilise *pas* `QUERY_ALL_PACKAGES`.
 
 ---
 
