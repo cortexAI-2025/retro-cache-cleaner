@@ -1,8 +1,8 @@
 # Politique de Confidentialité — Retro Cache Cleaner
 
-**Date d'entrée en vigueur :** 2026-04-13  
-**Éditeur :** [Nom de votre société]  
-**Contact :** [email@votresociete.com]
+**Date d'entrée en vigueur :** 22 octobre 2026  
+**Éditeur :** AIWorkPay (Ahmed Akafou)  
+**Contact :** contact@aiworkpay.fr
 
 ---
 
@@ -80,7 +80,7 @@ en en-tête sera modifiée en conséquence.
 
 ## 8. Contact
 
-Pour toute question : [email@votresociete.com]
+Pour toute question : contact@aiworkpay.fr
 
 ---
 

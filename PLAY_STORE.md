@@ -34,8 +34,9 @@ En local : copiez `keystore.properties.example` en `keystore.properties`, puis `
 
 - **Compte :** pour une société, un compte *organisation* (numéro D-U-N-S requis).
   Les comptes personnels récents doivent d'abord faire un test fermé (12 testeurs, 14 jours).
-- **Politique de confidentialité :** hébergez `PRIVACY_POLICY.md` sur une URL publique et saisissez
-  la même URL dans `legal.xml` (`privacy_url`) et dans la Play Console.
+- **Politique de confidentialité :** publiez `docs/cache-cleaner/confidentialite.html` sur
+  `https://aiworkpay.fr/cache-cleaner/confidentialite.html` (même chemin dans le dépôt du site) ; cette URL est déjà
+  dans `legal.xml` (`privacy_url`) et doit aussi être saisie dans la Play Console. Vérifiez qu'elle s'ouvre avant d'envoyer l'AAB.
 - **Sécurité des données :** aucune donnée collectée, aucune donnée partagée, aucune connexion réseau.
 - **API cible :** l'application cible Android 16 (API 36), exigée pour toute nouvelle application depuis le 31 août 2026.
 - **Catégorie :** Outils. **Public cible :** 18 ans et plus (ou tout public, sans contenu sensible).
