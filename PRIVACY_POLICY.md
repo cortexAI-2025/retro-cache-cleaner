@@ -1,14 +1,14 @@
-# Politique de Confidentialité — Retro Cache Cleaner
+# Politique de Confidentialité — Cache Cleaner
 
 **Date d'entrée en vigueur :** 22 octobre 2026  
-**Éditeur :** AIWorkPay (Ahmed Akafou)  
+**Éditeur :** AIWorkPay, SAS au capital de 100 €, 60 rue François 1er, 75008 Paris — SIREN 941 861 775, RCS Paris (président : Ahmed Akafou)  
 **Contact :** contact@aiworkpay.fr
 
 ---
 
 ## 1. Résumé
 
-**Retro Cache Cleaner ne collecte, ne stocke ni ne transmet aucune donnée personnelle.**
+**Cache Cleaner ne collecte, ne stocke ni ne transmet aucune donnée personnelle.**
 
 ---
 
@@ -84,5 +84,4 @@ Pour toute question : contact@aiworkpay.fr
 
 ---
 
-*Cette politique de confidentialité doit être hébergée sur une URL publique
-et référencée dans la Play Console lors de la soumission de l'application.*
+*Version publiée : https://aiworkpay.fr/cache-cleaner/confidentialite.html*
