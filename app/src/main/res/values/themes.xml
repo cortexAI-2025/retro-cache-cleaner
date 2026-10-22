@@ -18,7 +18,5 @@
         <item name="colorErrorContainer">@color/brand_error_container</item>
         <item name="colorOnErrorContainer">@color/brand_on_error_container</item>
         <item name="android:colorBackground">@color/brand_surface</item>
-        <item name="android:statusBarColor">@color/brand_surface</item>
-        <item name="android:navigationBarColor">@color/brand_surface</item>
     </style>
 </resources>

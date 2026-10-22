@@ -30,6 +30,9 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
+      - name: Release bundle (R8 check, unsigned)
+        run: ./gradlew bundleRelease -x checkLegalInfo
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:

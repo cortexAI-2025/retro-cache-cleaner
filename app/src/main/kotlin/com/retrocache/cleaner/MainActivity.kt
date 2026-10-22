@@ -22,8 +22,11 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
@@ -80,8 +83,17 @@ class MainActivity : AppCompatActivity() {
     private val uiHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Bord à bord (imposé à partir d'Android 15) : le contenu reste hors des barres système.
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root)) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
 
         toolbar = findViewById(R.id.toolbar)
         progress = findViewById(R.id.progress)
@@ -113,6 +125,7 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.action_select -> { enterSelection(); true }
                 R.id.action_select_all -> { selectAll(); true }
+                R.id.action_about -> { showAbout(); true }
                 R.id.action_close -> { finishAndRemoveTask(); true }
                 else -> false
             }
@@ -315,6 +328,7 @@ class MainActivity : AppCompatActivity() {
         val menu = toolbar.menu
         menu.findItem(R.id.action_select)?.isVisible = !selectionMode
         menu.findItem(R.id.action_close)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_about)?.isVisible = !selectionMode
         menu.findItem(R.id.action_select_all)?.isVisible = selectionMode
 
         if (selectionMode) {
@@ -522,6 +536,40 @@ class MainActivity : AppCompatActivity() {
                 updateSelectionUi()
             }
         }
+    }
+
+    // ── Mentions légales ─────────────────────────────────────────────────────
+
+    @Suppress("DEPRECATION")   // getPackageInfo(String, Int) : seule forme valable avant API 33
+    private fun versionName(): String = try {
+        packageManager.getPackageInfo(packageName, 0).versionName ?: ""
+    } catch (e: Exception) {
+        ""
+    }
+
+    private fun showAbout() {
+        val body = getString(
+            R.string.legal_body,
+            getString(R.string.legal_company),
+            getString(R.string.legal_form_capital),
+            getString(R.string.legal_address),
+            getString(R.string.legal_registration),
+            getString(R.string.legal_director),
+            getString(R.string.legal_email),
+            versionName()
+        )
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.about_title)
+            .setMessage(body)
+            .setPositiveButton(R.string.about_close, null)
+            .setNeutralButton(R.string.about_privacy) { _, _ ->
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.privacy_url))))
+                } catch (e: Exception) {
+                    Toast.makeText(this, R.string.err_open_settings, Toast.LENGTH_SHORT).show()
+                }
+            }
+            .show()
     }
 
     // ── Accès aux statistiques d'utilisation ─────────────────────────────────

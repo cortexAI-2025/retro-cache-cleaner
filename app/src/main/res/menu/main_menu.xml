@@ -11,6 +11,10 @@
         android:visible="false"
         app:showAsAction="always" />
     <item
+        android:id="@+id/action_about"
+        android:title="@string/menu_about"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_close"
         android:icon="@drawable/ic_close"
         android:title="@string/menu_close"

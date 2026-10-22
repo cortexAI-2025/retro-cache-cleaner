@@ -62,4 +62,10 @@
     <string name="queue_stop">Arrêter</string>
     <string name="queue_done">Terminé : %1$d applications traitées</string>
     <string name="queue_stopped">Opération arrêtée</string>
+
+    <string name="menu_about">Mentions légales</string>
+    <string name="about_title">À propos</string>
+    <string name="about_privacy">Confidentialité</string>
+    <string name="about_close">Fermer</string>
+    <string name="legal_body">Éditeur\n%1$s\n%2$s\n\nSiège social\n%3$s\n\nImmatriculation\n%4$s\n\nDirecteur de la publication\n%5$s\n\nContact\n%6$s\n\nCache Cleaner ne collecte aucune donnée personnelle, ne contient aucune publicité et n’effectue aucune connexion réseau.\n\nVersion %7$s</string>
 </resources>
